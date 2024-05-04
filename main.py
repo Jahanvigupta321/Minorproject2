@@ -20,7 +20,13 @@ fn = (p - 1) * (q - 1)
 n = p * q
 e = get_e(p, q, fn)
 new_image=""
-if menu == 'Encode':
+if menu == 'Documentation':
+    st.title('Documentation')
+    with open("Secured_pallete\README.md", 'r') as f:
+        docs = f.read()
+    st.markdown(docs, unsafe_allow_html=True)
+
+elif menu == 'Encode':
     st.title('Encoding')
 
     # Image input by the user

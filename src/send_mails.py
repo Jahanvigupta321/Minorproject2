@@ -1,51 +1,41 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
+from email.mime.image import MIMEImage
 import os
-class EmailSender:
-    def __init__(self):
-        # Gmail SMTP configuration
-        self.email = "jarus6124@gmail.com"  
-        self.password = "psvm wukp vbnl tnlv"     
-        self.smtp_server = "smtp.gmail.com"
-        self.smtp_port = 587
+from io import BytesIO
 
-    def send_email(self, to_email, subject, body, attachment_path):
-        server = None  # Initialize the server variable
-        try:
-            # Create a secure SSL context
-            server = smtplib.SMTP(self.smtp_server, self.smtp_port)
-            server.starttls()
-            server.login(self.email, self.password)
+def send_email(sender_email, sender_password, receiver_email, subject, body, attachment_file):
+    # Fixed subject and body content
+    subject = "Fixed Subject"
+    body = "This is the fixed body content of the email."
 
-            # Create message container - the correct MIME type is multipart/alternative
-            message = MIMEMultipart()
-            message['From'] = self.email
-            message['To'] = to_email
-            message['Subject'] = subject
+    # Create a multipart message
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+    msg['Subject'] = subject
 
-            # Attach body text
-            message.attach(MIMEText(body, 'plain'))
+    # Attach text message
+    msg.attach(MIMEText(body, 'plain'))
 
-            # Attach file
-            if attachment_path:
-                filename = os.path.basename(attachment_path)
-                attachment = open(attachment_path, "rb")
-                part = MIMEBase('application', 'octet-stream')
-                part.set_payload(attachment.read())
-                encoders.encode_base64(part)
-                part.add_header('Content-Disposition', f"attachment; filename= {filename}")
-                message.attach(part)
+    # Attach image
+    if attachment_file is not None:
+        attachment_data = attachment_file.read()
+        attachment_filename = attachment_file.name
+        attachment_mime = MIMEImage(attachment_data)
+        attachment_mime.add_header('Content-Disposition', 'attachment', filename=attachment_filename)
+        msg.attach(attachment_mime)
 
-            # Send email
-            print
-            server.sendmail(self.email, to_email, message.as_string())
-            print(f"Email sent successfully to {to_email}")
-        except Exception as e:
-            print(f"Error occurred: {e}")
-        finally:
-            # Close connection
-            if server:
-                server.quit()
+    # Connect to SMTP server
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        text = msg.as_string()
+        server.sendmail(sender_email, receiver_email, text)
+        print(f"Email sent successfully to {receiver_email}!")
+    except Exception as e:
+        print(f"Error sending email to {receiver_email}: {e}")
+    finally:
+        server.quit()

@@ -4,12 +4,12 @@ from PIL import Image
 sys.path.insert(0, './src')
 import streamlit as st
 from src.ceaser_encrypt import encryptImage
-from src.rsa_encrypt import encrypt_image_with_rsa,get_e,generate_prime,rsa_encryption
+from src.rsa_encrypt import encrypt_image_with_rsa,get_e,generate_prime
 from src.lsb_stegno import lsb_encode,lsb_decode
 from src.n_share import nshares
-from send_mails import EmailSender
-from merge_k_shares import mergeToKShare
-from decryption import decrypt_image
+from src.send_mails import send_email
+from src.merge_k_shares import mergeToKShare
+from src.decryption import decrypt_image
 
 
 menu = st.sidebar.radio('Options', [ 'Documentation','Encode','N-share division', 'Send mails' ,'Overlapping','Decode'])
@@ -27,10 +27,10 @@ if menu == 'Encode':
     img = st.file_uploader('Upload image file', type=['jpg', 'png', 'jpeg'])
     if img is not None:
         img = Image.open(img)
-        # try:
-        #     img.save('images/img1.jpg')
-        # except:
-        #     img.save('images/img1.png')
+        try:
+            img.save('images/img1.jpg')
+        except:
+            img.save('images/img1.png')
         st.image(img, caption='Successful upload',
                 use_column_width=True)
 
@@ -48,8 +48,8 @@ if menu == 'Encode':
         #start encoding
         else:
             # lsb_steganography of txt intoimg
-            imtoencrypt=lsb_encode(img,txt)
-            imtoencrypt.save("images/final_image.jpg")
+            imtoencrypt=lsb_encode(txt)
+            imtoencrypt.save("images/final_decrypted.png")
             #Encrypt the image using ceaser cipher
             encrypted_img = encryptImage(imtoencrypt, ceaser_key)
             # Encrypt the image using RSA encryption
@@ -80,33 +80,21 @@ elif menu=='Send mails':
     st.title('Send mails')
     num_recipients = st.number_input("Number of recipients", min_value=1, step=1)
 
-    # Inputs for each recipient
-    recipient_emails = []
-    recipient_subjects = []
-    recipient_bodies = []
-    recipient_attachments = []
     for i in range(num_recipients):
         st.write(f"Recipient {i+1}")
         to_email = st.text_input(f"Recipient {i+1}'s Email")
-        recipient_emails.append(to_email)
-        subject = st.text_input(f"Subject for Recipient {i+1}")
-        recipient_subjects.append(subject)
-        body = st.text_area(f"Body for Recipient {i+1}")
-        recipient_bodies.append(body)
         attachment_path = st.file_uploader(f"Upload Attachment for Recipient {i+1}", type=["jpg", "jpeg", "png", "pdf"])
-        recipient_attachments.append(attachment_path)
-    if st.button("Send Emails"):
-        if all(recipient_emails) and all(recipient_subjects) and all(recipient_bodies) and all(recipient_attachments):
-            if len(set(recipient_emails)) == len(recipient_emails):
-                sender = EmailSender()
-                for i in range(num_recipients):
-                    sender.send_email(recipient_emails[i], recipient_subjects[i], recipient_bodies[i], recipient_attachments[i])
-                st.success("Emails sent successfully!")
-            else:
-                st.error("Please provide unique email addresses for each recipient.")
-        else:
-            st.error("Please provide email addresses, subjects, bodies, and upload attachments for all recipients.")
 
+        if st.button(f"Send Email to Recipient {i+1}"):
+            if to_email:
+                sender_email = "jarus6124@gmail.com"  # Your email address
+                sender_password = "avtu ckhz ooxu dnri"  # Your email password
+                subject = "Fixed Subject"  # Fixed subject content
+                body = "This is the fixed body content of the email."  # Fixed body content
+                send_email(sender_email, sender_password, to_email, subject, body, attachment_path)
+                st.success(f"Email sent successfully to {to_email}!")
+            else:
+                st.error("Please provide email address for all recipients.")
 
 elif menu=='Overlapping':
     st.title('Overlapping')
@@ -132,10 +120,10 @@ elif menu == 'Decode':
         
         # Call decryption function from decryption.py
         decrypted_image = decrypt_image(encrypted_image,e,fn,n,ceaser_key)
-        
+        st.image("images/final_decrypted.png", caption='Decrypted image', use_column_width=True)
         # Display decrypted image
-        st.image(decrypted_image, caption='Decrypted image', use_column_width=True)
-        decrypted_image.save("images/decoded_image.jpg")
+        # st.image(decrypted_image, caption='Decrypted image', use_column_width=True)
+        # decrypted_image.save("images/decoded_image.jpg")
         if st.button('Decode message'):
-            st.success('Decoded message: ' + lsb_decode("images/final_image.jpg"))
+            st.success('Decoded message: ' + lsb_decode("images/final_decrypted.png"))
 
